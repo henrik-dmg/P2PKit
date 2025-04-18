@@ -14,7 +14,7 @@ import Testing
 @Suite("Bluetooth Advertising Tests", .disabled())
 struct BluetoothAdvertisingTests: AdvertisingTests {
 
-    let service = BluetoothService(uuid: CBUUID(), writeCharacteristicUUID: CBUUID(), readCharacteristicUUID: CBUUID())
+    let service = BluetoothService(uuid: CBUUID(), characteristicUUID: CBUUID())
 
     @Test
     func serviceGetsAdvertised() async throws {

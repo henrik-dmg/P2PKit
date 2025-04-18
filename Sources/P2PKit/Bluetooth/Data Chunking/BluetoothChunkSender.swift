@@ -40,21 +40,21 @@ final class BluetoothChunkSender {
         }
         chunks.append(.bluetoothEOM)
 
-         if pendingChunks[peerID] != nil {
-             pendingChunks[peerID]?.append(contentsOf: chunks)
-         } else {
-             pendingChunks[peerID] = chunks
-         }
+        if pendingChunks[peerID] != nil {
+            pendingChunks[peerID]?.append(contentsOf: chunks)
+        } else {
+            pendingChunks[peerID] = chunks
+        }
 
-         writeHandlers[peerID] = chunkWriteHandler
+        writeHandlers[peerID] = chunkWriteHandler
     }
 
     func markChunkAsSent(for peerID: String) {
         pendingChunks[peerID]?.removeFirst()
     }
 
-    func sendNextChunk() {
-        guard let (peerID, pendingChunks) = pendingChunks.first else {
+    func sendNextChunk(for peerID: String) {
+        guard let pendingChunks = pendingChunks[peerID] else {
             logger.info("No pending chunks to send")
             // No data cached that is still waiting to be sent
             return

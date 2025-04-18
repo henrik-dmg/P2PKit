@@ -6,8 +6,8 @@
 //
 
 import Network
-import SwiftUI
 import OSLog
+import SwiftUI
 
 @Observable
 public final class BonjourDiscoveryService: BonjourDataTransferService, PeerDiscoveryService {

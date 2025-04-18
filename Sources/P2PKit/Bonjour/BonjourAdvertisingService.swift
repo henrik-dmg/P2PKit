@@ -6,8 +6,8 @@
 //
 
 import Network
-import Observation
 import OSLog
+import Observation
 
 @Observable
 public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAdvertisingService {

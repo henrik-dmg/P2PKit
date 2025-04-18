@@ -133,7 +133,7 @@ extension BluetoothDiscoveryService: PeerDataTransferService {
         chunkSender.queue(data, to: peerID) { chunk in
             peripheral.writeValue(chunk, for: characteristic, type: .withResponse)
         }
-        chunkSender.sendNextChunk()
+        chunkSender.sendNextChunk(for: peerID)
     }
 
     public func disconnect(from peerID: ID) {
@@ -301,17 +301,19 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
     }
 
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        let peerID = peerID(for: peripheral)
+
         // First handle error if any
         if let error {
             logger.error("Error writing value for characteristic \(characteristic.uuid): \(error)")
-            chunkSender.sendNextChunk()
+            chunkSender.sendNextChunk(for: peerID)
             return
         }
 
         logger.info("Successfully wrote value for characteristic \(characteristic.uuid)")
-        let peerID = peerID(for: peripheral)
+
         chunkSender.markChunkAsSent(for: peerID)
-        chunkSender.sendNextChunk()
+        chunkSender.sendNextChunk(for: peerID)
     }
 
 }

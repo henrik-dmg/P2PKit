@@ -1,5 +1,5 @@
 //
-//  DelegateSpy.swift
+//  PeerDataTransferServiceDelegateSpy.swift
 //  P2PKit
 //
 //  Created by Henrik Panhans on 17.04.25.
@@ -29,21 +29,6 @@ class PeerDataTransferServiceDelegateSpy: NSObject, PeerDataTransferServiceDeleg
 
     func serviceDidDisconnectFromPeer(with id: String) {
         serviceDidDisconnectFromPeerHandler?(id)
-    }
-
-}
-
-class PeerAdvertisingServiceDelegateSpy<S: Service>: NSObject, PeerAdvertisingServiceDelegate {
-
-    var serverDidStartAdvertisingHandler: ((any Service) -> Void)?
-    var serviceDidStopAdvertisingHandler: ((any Service) -> Void)?
-
-    func serviceDidStartAdvertising(_ service: any Service) {
-        serverDidStartAdvertisingHandler?(service)
-    }
-
-    func serviceDidStopAdvertising(_ service: any Service) {
-        serviceDidStopAdvertisingHandler?(service)
     }
 
 }

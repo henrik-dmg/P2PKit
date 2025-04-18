@@ -6,8 +6,8 @@
 //
 
 import MultipeerConnectivity
-import Observation
 import OSLog
+import Observation
 
 @Observable
 public final class MultipeerDiscoveryService: MultipeerDataTransferService, PeerDiscoveryService {

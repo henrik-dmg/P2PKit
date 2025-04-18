@@ -123,6 +123,7 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
 
 // MARK: - PeerDataTransferService
 
+@available(visionOS, unavailable)
 extension BluetoothAdvertisingService: PeerDataTransferService {
 
     public func connect(to peer: BluetoothPeer) {
@@ -145,12 +146,12 @@ extension BluetoothAdvertisingService: PeerDataTransferService {
             if wasValueUpdated {
                 logger.debug("Wrote \(chunk.count) bytes")
                 chunkSender.markChunkAsSent(for: peerID)
-                chunkSender.sendNextChunk()
+                chunkSender.sendNextChunk(for: peerID)
             } else {
                 logger.warning("Failed to write \(chunk.count) bytes. Most likely because queue is full.")
             }
         }
-        chunkSender.sendNextChunk()
+        chunkSender.sendNextChunk(for: peerID)
     }
 
     public func disconnect(from peerID: ID) {
@@ -231,8 +232,14 @@ extension BluetoothAdvertisingService: CBPeripheralManagerDelegate {
     }
 
     public func peripheralManagerIsReady(toUpdateSubscribers peripheralManager: CBPeripheralManager) {
-        logger.info("Peripheral manager is ready")
-        chunkSender.sendNextChunk()
+        logger.info("Peripheral manager is ready to update subscribers")
+        // Simply using the first peer here is maybe a bit sub-optimal but in peripheral mode
+        // we don't get callbacks for which specific device a chunk was written
+        guard let firstPeerID = connectedPeers.first else {
+            logger.warning("No connected peers to send chunks to")
+            return
+        }
+        chunkSender.sendNextChunk(for: firstPeerID)
     }
 
     public func peripheralManager(_ peripheralManager: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
