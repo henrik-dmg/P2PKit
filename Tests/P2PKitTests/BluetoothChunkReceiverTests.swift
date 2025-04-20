@@ -16,7 +16,7 @@ struct BluetoothChunkReceiverTests {
 
     @Test
     func receivesCompleteMessage() async throws {
-        let receiver = BluetoothChunkReceiver()
+        let receiver = BluetoothChunkReceiver(endOfMessageSignal: .bluetoothEOM)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
         #expect(!receiver.receive("World".data(using: .utf8)!, from: "test"))
         #expect(receiver.receive(.bluetoothEOM, from: "test"))
@@ -27,14 +27,14 @@ struct BluetoothChunkReceiverTests {
 
     @Test
     func receivesOnlyEOM() async throws {
-        let receiver = BluetoothChunkReceiver()
+        let receiver = BluetoothChunkReceiver(endOfMessageSignal: .bluetoothEOM)
         #expect(receiver.receive(.bluetoothEOM, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == nil)
     }
 
     @Test
     func wipesOldDataAfterEOM() async throws {
-        let receiver = BluetoothChunkReceiver()
+        let receiver = BluetoothChunkReceiver(endOfMessageSignal: .bluetoothEOM)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
         #expect(receiver.receive(.bluetoothEOM, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == "Hello".data(using: .utf8))
@@ -46,3 +46,5 @@ struct BluetoothChunkReceiverTests {
     }
 
 }
+
+

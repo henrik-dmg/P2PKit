@@ -39,18 +39,20 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
     private let centralManager: CBCentralManager
     private let centralsQueue: DispatchQueue
 
-    private let chunkReceiver = BluetoothChunkReceiver()
-    private let chunkSender = BluetoothChunkSender()
+    private let chunkReceiver: BluetoothChunkReceiver
+    private let chunkSender: BluetoothChunkSender
 
     private let logger = Logger.bluetooth("discovery")
 
     // MARK: - Init
 
-    public init(ownPeerID: ID, service: S) {
+    public init(ownPeerID: ID, service: S, endOfMessageSingal: Data) {
         self.ownPeerID = ownPeerID
         self.service = service
-        self.centralsQueue = DispatchQueue(label: "bluetoothQueue")
-        self.centralManager = CBCentralManager(delegate: nil, queue: centralsQueue)
+        centralsQueue = DispatchQueue(label: "bluetoothQueue")
+        centralManager = CBCentralManager(delegate: nil, queue: centralsQueue)
+        chunkReceiver = BluetoothChunkReceiver(endOfMessageSignal: endOfMessageSingal)
+        chunkSender = BluetoothChunkSender(endOfMessageSignal: endOfMessageSingal)
         super.init()
         centralManager.delegate = self
     }
@@ -130,7 +132,9 @@ extension BluetoothDiscoveryService: PeerDataTransferService {
             return
         }
 
-        chunkSender.queue(data, to: peerID) { chunk in
+        chunkSender.queue(data, to: peerID) {
+            peripheral.maximumWriteValueLength(for: .withResponse)
+        } chunkWriteHandler: { chunk in
             peripheral.writeValue(chunk, for: characteristic, type: .withResponse)
         }
         chunkSender.sendNextChunk(for: peerID)
@@ -312,8 +316,9 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
 
         logger.info("Successfully wrote value for characteristic \(characteristic.uuid)")
 
-        chunkSender.markChunkAsSent(for: peerID)
-        chunkSender.sendNextChunk(for: peerID)
+        if chunkSender.markChunkAsSent(for: peerID) {
+            chunkSender.sendNextChunk(for: peerID)
+        }
     }
 
 }

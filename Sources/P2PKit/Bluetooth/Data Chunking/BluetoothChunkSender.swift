@@ -13,65 +13,105 @@ final class BluetoothChunkSender {
     // MARK: - Nested Types
 
     typealias ChunkWriteHandler = (Data) -> Void
+    typealias ChunkSizeHandler = () -> Int
 
     // MARK: - Properties
 
-    private var pendingChunks: [String: [Data]] = [:]
+    private var queuedData: [String: [Data]] = [:]
     private var writeHandlers: [String: ChunkWriteHandler] = [:]
-    private let chunkSize: Int
+    private var sizeHandlers: [String: ChunkSizeHandler] = [:]
+    private var lastWrittenChunkSize: [String: Int] = [:]
+
     private let logger = Logger.bluetooth("chunksender")
+    private let endOfMessageSignal: Data
+    private let endOfMessageSignalSize: Int
 
     // MARK: - Init
 
-    init(chunkSize: Int = .defaultBluetoothChunkSize) {
-        self.chunkSize = chunkSize
+    init(endOfMessageSignal: Data) {
+        self.endOfMessageSignal = endOfMessageSignal
+        self.endOfMessageSignalSize = endOfMessageSignal.count
     }
 
     // MARK: - Methods
 
-    func queue(_ data: Data, to peerID: String, chunkWriteHandler: @escaping (Data) -> Void) {
-        var chunks = stride(from: data.startIndex, to: data.endIndex, by: chunkSize).map { index in
-            let fullChunkEndIndex = index.advanced(by: chunkSize)
-            if data.endIndex < fullChunkEndIndex {
-                return data.subdata(in: index..<data.endIndex)
-            } else {
-                return data.subdata(in: index..<fullChunkEndIndex)
-            }
-        }
-        chunks.append(.bluetoothEOM)
-
-        if pendingChunks[peerID] != nil {
-            pendingChunks[peerID]?.append(contentsOf: chunks)
+    func queue(
+        _ data: Data,
+        to peerID: String,
+        chunkSizeHandler: @escaping ChunkSizeHandler,
+        chunkWriteHandler: @escaping ChunkWriteHandler
+    ) {
+        if queuedData[peerID] != nil {
+            queuedData[peerID]?.append(data)
         } else {
-            pendingChunks[peerID] = chunks
+            queuedData[peerID] = [data]
         }
+
+        logger.debug("Queued \(data.count) bytes for \(peerID)")
 
         writeHandlers[peerID] = chunkWriteHandler
+        sizeHandlers[peerID] = chunkSizeHandler
     }
 
-    func markChunkAsSent(for peerID: String) {
-        pendingChunks[peerID]?.removeFirst()
+    func markChunkAsSent(for peerID: String) -> Bool {
+        guard let lastWrittenChunkSize = lastWrittenChunkSize[peerID] else {
+            logger.warning("No last written chunk size for \(peerID)")
+            return false
+        }
+        guard var firstChunkData = queuedData[peerID]?.first else {
+            logger.warning("No data to remove for \(peerID)")
+            return false
+        }
+        guard firstChunkData != endOfMessageSignal else {
+            queuedData[peerID]?.removeFirst()
+            return queuedData[peerID]?.isEmpty == false
+        }
+
+        firstChunkData.removeFirst(lastWrittenChunkSize)
+
+        if firstChunkData.isEmpty {
+            queuedData[peerID]?[0] = endOfMessageSignal
+        } else {
+            queuedData[peerID]?[0] = firstChunkData
+        }
+
+        return true
     }
 
     func sendNextChunk(for peerID: String) {
-        guard let pendingChunks = pendingChunks[peerID] else {
-            logger.info("No pending chunks to send")
-            // No data cached that is still waiting to be sent
-            return
-        }
-
-        guard let nextChunk = pendingChunks.first else {
-            self.pendingChunks[peerID] = nil
-            self.writeHandlers[peerID] = nil
-            return
-        }
-
         guard let writeHandler = writeHandlers[peerID] else {
             logger.warning("No write handler for \(peerID)")
             return
         }
+        guard let sizeHandler = sizeHandlers[peerID] else {
+            logger.warning("No size handler for \(peerID)")
+            return
+        }
 
-        writeHandler(nextChunk)
+        guard let queuedDataForPeer = queuedData[peerID]?.first else {
+            cleanUp(for: peerID)
+            logger.info("No pending chunks to send")
+            return
+        }
+
+        let chunkSize = sizeHandler()
+        let endOfMessageSignalSize = self.endOfMessageSignalSize
+        if chunkSize < endOfMessageSignalSize {
+            logger.critical(
+                "Chunk size should not be smaller than the end of message signal size: \(chunkSize) < \(endOfMessageSignalSize)"
+            )
+        }
+
+        let chunk = Data(queuedDataForPeer.prefix(chunkSize))
+        lastWrittenChunkSize[peerID] = chunk.count
+        writeHandler(chunk)
+    }
+
+    private func cleanUp(for peerID: String) {
+        queuedData[peerID] = nil
+        writeHandlers[peerID] = nil
+        sizeHandlers[peerID] = nil
+        lastWrittenChunkSize[peerID] = nil
     }
 
 }

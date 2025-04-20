@@ -18,7 +18,7 @@ struct BluetoothAdvertisingTests: AdvertisingTests {
 
     @Test
     func serviceGetsAdvertised() async throws {
-        let advertiser = BluetoothAdvertisingService(ownPeerID: UUID().uuidString, service: service)
+        let advertiser = BluetoothAdvertisingService(ownPeerID: UUID().uuidString, service: service, endOfMessageSignal: "EOM".data(using: .utf8)!)
 
         advertiser.startAdvertisingService()
         try await Task.sleep(for: .seconds(2))

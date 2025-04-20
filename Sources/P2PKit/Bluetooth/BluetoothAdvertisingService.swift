@@ -35,8 +35,8 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
     private let peripheralManager: CBPeripheralManager
     private let peripheralQueue: DispatchQueue
 
-    private let chunkReceiver = BluetoothChunkReceiver()
-    private let chunkSender = BluetoothChunkSender()
+    private let chunkReceiver: BluetoothChunkReceiver
+    private let chunkSender: BluetoothChunkSender
 
     private let logger = Logger.bluetooth("advertising")
 
@@ -55,11 +55,13 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
 
     // MARK: - Init
 
-    public init(ownPeerID: ID, service: S) {
+    public init(ownPeerID: ID, service: S, endOfMessageSignal: Data) {
         self.ownPeerID = ownPeerID
         self.service = service
-        self.peripheralQueue = DispatchQueue(label: "peripheralQueue")
-        self.peripheralManager = CBPeripheralManager(delegate: nil, queue: peripheralQueue, options: nil)
+        peripheralQueue = DispatchQueue(label: "peripheralQueue")
+        peripheralManager = CBPeripheralManager(delegate: nil, queue: peripheralQueue, options: nil)
+        chunkReceiver = BluetoothChunkReceiver(endOfMessageSignal: endOfMessageSignal)
+        chunkSender = BluetoothChunkSender(endOfMessageSignal: endOfMessageSignal)
         super.init()
         peripheralManager.delegate = self
     }
@@ -136,7 +138,9 @@ extension BluetoothAdvertisingService: PeerDataTransferService {
             return
         }
 
-        chunkSender.queue(data, to: peerID) { [weak self] chunk in
+        chunkSender.queue(data, to: peerID) {
+            central.maximumUpdateValueLength
+        } chunkWriteHandler: { [weak self] chunk in
             guard let self else {
                 return
             }
@@ -145,8 +149,9 @@ extension BluetoothAdvertisingService: PeerDataTransferService {
 
             if wasValueUpdated {
                 logger.debug("Wrote \(chunk.count) bytes")
-                chunkSender.markChunkAsSent(for: peerID)
-                chunkSender.sendNextChunk(for: peerID)
+                if chunkSender.markChunkAsSent(for: peerID) {
+                    chunkSender.sendNextChunk(for: peerID)
+                }
             } else {
                 logger.warning("Failed to write \(chunk.count) bytes. Most likely because queue is full.")
             }
