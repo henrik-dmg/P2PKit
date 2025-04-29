@@ -42,16 +42,8 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
 
     @ObservationIgnored
     private lazy var cbService: CBMutableService = makeService()
-
     @ObservationIgnored
-    private lazy var characteristic: CBMutableCharacteristic = {
-        CBMutableCharacteristic(
-            type: service.characteristicUUID,
-            properties: [.read, .notify, .write, .writeWithoutResponse],
-            value: nil,
-            permissions: [.readable, .writeable]
-        )
-    }()
+    private lazy var characteristic: CBMutableCharacteristic = makeCharacteristic()
 
     // MARK: - Init
 
@@ -89,6 +81,15 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
         let transferService = CBMutableService(type: service.uuid, primary: true)
         transferService.characteristics = [characteristic]
         return transferService
+    }
+
+    private func makeCharacteristic() -> CBMutableCharacteristic {
+        CBMutableCharacteristic(
+            type: service.characteristicUUID,
+            properties: [.read, .notify, .write, .writeWithoutResponse],
+            value: nil,
+            permissions: [.readable, .writeable]
+        )
     }
 
     private func updateState(_ newState: ServiceState) {

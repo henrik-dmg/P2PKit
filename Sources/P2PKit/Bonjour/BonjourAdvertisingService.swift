@@ -5,9 +5,8 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
-import Network
 import OSLog
-import Observation
+import Network
 
 @Observable
 public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAdvertisingService {
@@ -47,7 +46,7 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
     // MARK: - Helpers
 
     private func makeListener() throws -> NWListener {
-        let parameters = NWParameters.tcp
+        let parameters = NWParameters.applicationService
         parameters.includePeerToPeer = true  // Allow discovery on AWDL, etc.
 
         let service = NWListener.Service(name: ownPeerID, type: service.type)
@@ -81,7 +80,9 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
         listener.newConnectionLimit = 1
 
         listener.serviceRegistrationUpdateHandler = { [weak self] registrationState in
-            guard let self else { return }
+            guard let self else {
+                return
+            }
             switch registrationState {
             case .add:
                 updateState(.active)

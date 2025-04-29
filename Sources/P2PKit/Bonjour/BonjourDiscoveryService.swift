@@ -5,9 +5,8 @@
 //  Created by Henrik Panhans on 07.03.25.
 //
 
-import Network
 import OSLog
-import SwiftUI
+import Network
 
 @Observable
 public final class BonjourDiscoveryService: BonjourDataTransferService, PeerDiscoveryService {
@@ -49,13 +48,15 @@ public final class BonjourDiscoveryService: BonjourDataTransferService, PeerDisc
     // MARK: - Helpers
 
     private func makeBrowser() -> NWBrowser {
-        let parameters = NWParameters.tcp
+        let parameters = NWParameters.applicationService
         parameters.includePeerToPeer = true  // Allow discovery on AWDL, etc.
 
         let descriptor = NWBrowser.Descriptor.bonjour(type: service.type, domain: nil)
         let browser = NWBrowser(for: descriptor, using: parameters)
         browser.stateUpdateHandler = { [weak self] newState in
-            guard let self else { return }
+            guard let self else {
+                return
+            }
             switch newState {
             case .setup:
                 logger.info("Browser setup")
@@ -71,8 +72,7 @@ public final class BonjourDiscoveryService: BonjourDataTransferService, PeerDisc
                 logger.warning("Unknown browser state: \(String(describing: newState))")
             }
         }
-        browser.browseResultsChangedHandler = { [weak self] updated, changes in
-            print("Browser results changed:")
+        browser.browseResultsChangedHandler = { [weak self] _, changes in
             for change in changes {
                 switch change {
                 case let .added(result):

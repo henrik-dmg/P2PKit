@@ -7,7 +7,11 @@
 
 public struct MultipeerService: Service {
 
+    // MARK: - Properties
+
     public let type: String
+
+    // MARK: - Init
 
     public init(type: String) {
         self.type = type

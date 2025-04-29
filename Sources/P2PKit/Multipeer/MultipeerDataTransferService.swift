@@ -119,7 +119,7 @@ extension MultipeerDataTransferService: MCSessionDelegate {
     }
 
     public func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
-        logger.info("Session did receive stream")
+        logger.info("Session did receive stream with name \(streamName)")
     }
 
     public func session(

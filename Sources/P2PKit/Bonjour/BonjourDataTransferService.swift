@@ -5,10 +5,8 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
-import Foundation
-import Network
 import OSLog
-import Observation
+import Network
 
 @Observable
 public class BonjourDataTransferService: NSObject, PeerDataTransferService {
@@ -45,7 +43,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
     // MARK: - PeerDataTransferService
 
     public func connect(to peer: BonjourPeer) {
-        let connection = NWConnection(to: peer.endpoint, using: .tcp)
+        let connection = NWConnection(to: peer.endpoint, using: .applicationService)
         connect(with: connection, peerID: peer.id)
     }
 
@@ -54,24 +52,26 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
             return  // Already connected to peer
         }
         connection.stateUpdateHandler = { [weak self] newState in
-            guard let self else { return }
+            guard let self else {
+                return
+            }
             switch newState {
             case .setup:
-                logger.info("Connection setting up")
+                logger.info("Connection to \(peerID) setting up")
             case let .waiting(error):
-                logger.error("Connection waiting: \(error)")
+                logger.error("Connection to \(peerID) waiting: \(error)")
             case .preparing:
-                logger.info("Connection preparing")
+                logger.info("Connection to \(peerID) preparing")
             case .ready:
-                logger.info("Connection ready, starting receive")
+                logger.info("Connection to \(peerID) ready, starting receive")
                 delegate?.serviceDidConnectToPeer(with: peerID)
                 receive(on: connection, peerID: peerID)
             case let .failed(error):
-                logger.error("Connection failed: \(error)")
+                logger.error("Connection to \(peerID) failed: \(error)")
                 delegate?.serviceDidFailToConnectToPeer(with: peerID, error: error)
                 disconnect(from: peerID)
             case .cancelled:
-                logger.info("Connection was stopped")
+                logger.info("Connection to \(peerID) was stopped")
                 delegate?.serviceDidDisconnectFromPeer(with: peerID)
                 disconnect(from: peerID)
             @unknown default:
@@ -91,7 +91,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
     public func disconnect(from peerID: P.ID) {
         guard let connection = connections[peerID] else {
-            logger.error("No connection to \(peerID) to cancel")
+            logger.warning("No connection to \(peerID) to cancel")
             return
         }
         connection.cancel()

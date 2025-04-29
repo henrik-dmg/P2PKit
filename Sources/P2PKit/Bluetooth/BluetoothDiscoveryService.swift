@@ -117,14 +117,7 @@ extension BluetoothDiscoveryService: PeerDataTransferService {
             return
         }
 
-        // Add connection options to prevent pairing UI
-        let options: [String: Any] = [:]
-        //            CBConnectPeripheralOptionNotifyOnConnectionKey: false,
-        //            CBConnectPeripheralOptionNotifyOnDisconnectionKey: false,
-        //            CBConnectPeripheralOptionNotifyOnNotificationKey: false,
-        //        ]
-
-        centralManager.connect(peer.peripheral, options: options)
+        centralManager.connect(peer.peripheral, options: [:])
     }
 
     public func send(_ data: Data, to peerID: ID) async throws {
@@ -296,7 +289,7 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
             return
         }
 
-        logger.debug("Received \(characteristicData.count) bytes from \(peerID) for characteristic \(characteristic.uuid)")
+        logger.trace("Received \(characteristicData.count) bytes from \(peerID) for characteristic \(characteristic.uuid)")
 
         if chunkReceiver.receive(characteristicData, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
             logger.info("Notifying delegate about \(completeData.count) received bytes")
@@ -314,7 +307,7 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
             return
         }
 
-        logger.info("Successfully wrote value for characteristic \(characteristic.uuid)")
+        logger.trace("Successfully wrote value for characteristic \(characteristic.uuid)")
 
         if chunkSender.markChunkAsSent(for: peerID) {
             chunkSender.sendNextChunk(for: peerID)

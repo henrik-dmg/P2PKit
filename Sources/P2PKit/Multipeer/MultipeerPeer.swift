@@ -14,10 +14,15 @@ public struct MultipeerPeer: Peer {
     public let identifier: MCPeerID
     public let info: [String: String]?
 
-    // MARK: - Init
-
     public var id: ID {
         identifier.displayName
+    }
+
+    // MARK: - Init
+
+    public init(identifier: MCPeerID, info: [String : String]?) {
+        self.identifier = identifier
+        self.info = info
     }
 
 }

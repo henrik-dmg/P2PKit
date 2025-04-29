@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Network
 
 public struct BonjourInformationService: PeerInformationService {
 
@@ -44,6 +45,27 @@ public struct BonjourInformationService: PeerInformationService {
                     }
                 }
             }
+        }
+    }
+
+}
+
+// MARK: - BonjourPeer Extensions
+
+extension BonjourPeer {
+
+    struct ServiceConfiguration {
+        let name: String
+        let type: String
+        let domain: String
+        let interface: NWInterface?
+    }
+
+    var serviceConfiguration: ServiceConfiguration? {
+        if case let .service(name, type, domain, interface) = endpoint {
+            return .init(name: name, type: type, domain: domain, interface: interface)
+        } else {
+            return nil
         }
     }
 

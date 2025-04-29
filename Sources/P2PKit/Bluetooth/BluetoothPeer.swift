@@ -6,9 +6,10 @@
 //
 
 import CoreBluetooth
-import Foundation
 
 public struct BluetoothPeer: Peer {
+
+    // MARK: - Properties
 
     public let peripheral: CBPeripheral
     public let advertisementData: [String: Any]
@@ -19,6 +20,13 @@ public struct BluetoothPeer: Peer {
 
     public var name: String {
         peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? id
+    }
+
+    // MARK: - Init
+
+    public init(peripheral: CBPeripheral, advertisementData: [String : Any]) {
+        self.peripheral = peripheral
+        self.advertisementData = advertisementData
     }
 
 }
