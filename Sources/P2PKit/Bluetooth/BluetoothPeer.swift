@@ -24,7 +24,7 @@ public struct BluetoothPeer: Peer {
 
     // MARK: - Init
 
-    public init(peripheral: CBPeripheral, advertisementData: [String : Any]) {
+    public init(peripheral: CBPeripheral, advertisementData: [String: Any]) {
         self.peripheral = peripheral
         self.advertisementData = advertisementData
     }

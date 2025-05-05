@@ -1,5 +1,5 @@
 //
-//  BluetoothChunkSenderTests.swift
+//  DataChunkSenderTests.swift
 //  P2PKit
 //
 //  Created by Henrik Panhans on 18.04.25.
@@ -12,16 +12,17 @@ import Testing
 @testable import P2PKit
 
 @Suite
-struct BluetoothChunkSenderTests {
+struct DataChunkSenderTests {
 
     @Test
     func sendsAllData() throws {
         var writtenChunks: [Data] = []
 
-        let sender = BluetoothChunkSender(endOfMessageSignal: .bluetoothEOM)
+        let sender = DataChunkSender(endOfMessageSignal: .bluetoothEOM)
         sender.queue("Hello World".data(using: .utf8)!, to: "test") {
             3
         } chunkWriteHandler: { chunk in
+            print("Writing \(chunk) (size: \(chunk.count))")
             writtenChunks.append(chunk)
         }
 
@@ -30,9 +31,7 @@ struct BluetoothChunkSenderTests {
         } while sender.markChunkAsSent(for: "test")
 
         #expect(writtenChunks.count == 5)
-        let writtenData = writtenChunks.prefix(4).joined()
-        #expect(Data(writtenData) == "Hello World".data(using: .utf8))
-        #expect(writtenChunks.last == .bluetoothEOM)
+        #expect(Data(writtenChunks.joined()) == "Hello World".data(using: .utf8)! + .bluetoothEOM)
     }
 
 }

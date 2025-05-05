@@ -1,5 +1,5 @@
 //
-//  BluetoothChunkReceiverTests.swift
+//  DataChunkReceiverTests.swift
 //  P2PKit
 //
 //  Created by Henrik Panhans on 18.04.25.
@@ -12,11 +12,11 @@ import Testing
 @testable import P2PKit
 
 @Suite
-struct BluetoothChunkReceiverTests {
+struct DataChunkReceiverTests {
 
     @Test
     func receivesCompleteMessage() async throws {
-        let receiver = BluetoothChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
         #expect(!receiver.receive("World".data(using: .utf8)!, from: "test"))
         #expect(receiver.receive(.bluetoothEOM, from: "test"))
@@ -26,15 +26,25 @@ struct BluetoothChunkReceiverTests {
     }
 
     @Test
+    func receivesCompleteMessageWithEOMInLastChunk() async throws {
+        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
+        #expect(receiver.receive("World".data(using: .utf8)! + .bluetoothEOM, from: "test"))
+
+        let fullData = try #require(receiver.allReceivedData(from: "test"))
+        #expect(fullData == "HelloWorld".data(using: .utf8))
+    }
+
+    @Test
     func receivesOnlyEOM() async throws {
-        let receiver = BluetoothChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
         #expect(receiver.receive(.bluetoothEOM, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == nil)
     }
 
     @Test
     func wipesOldDataAfterEOM() async throws {
-        let receiver = BluetoothChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
         #expect(receiver.receive(.bluetoothEOM, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == "Hello".data(using: .utf8))

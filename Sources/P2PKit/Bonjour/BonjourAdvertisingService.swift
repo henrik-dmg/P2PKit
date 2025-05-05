@@ -5,8 +5,8 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
-import OSLog
 import Network
+import OSLog
 
 @Observable
 public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAdvertisingService {

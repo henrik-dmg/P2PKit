@@ -20,7 +20,7 @@ public struct MultipeerPeer: Peer {
 
     // MARK: - Init
 
-    public init(identifier: MCPeerID, info: [String : String]?) {
+    public init(identifier: MCPeerID, info: [String: String]?) {
         self.identifier = identifier
         self.info = info
     }

@@ -5,8 +5,8 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
-import SwiftUI
 import Network
+import SwiftUI
 
 public struct BonjourInformationService: PeerInformationService {
 

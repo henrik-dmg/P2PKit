@@ -39,8 +39,8 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
     private let centralManager: CBCentralManager
     private let centralsQueue: DispatchQueue
 
-    private let chunkReceiver: BluetoothChunkReceiver
-    private let chunkSender: BluetoothChunkSender
+    private let chunkReceiver: DataChunkReceiver
+    private let chunkSender: DataChunkSender
 
     private let logger = Logger.bluetooth("discovery")
 
@@ -51,8 +51,8 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
         self.service = service
         centralsQueue = DispatchQueue(label: "bluetoothQueue")
         centralManager = CBCentralManager(delegate: nil, queue: centralsQueue)
-        chunkReceiver = BluetoothChunkReceiver(endOfMessageSignal: endOfMessageSingal)
-        chunkSender = BluetoothChunkSender(endOfMessageSignal: endOfMessageSingal)
+        chunkReceiver = DataChunkReceiver(endOfMessageSignal: endOfMessageSingal)
+        chunkSender = DataChunkSender(endOfMessageSignal: endOfMessageSingal)
         super.init()
         centralManager.delegate = self
     }

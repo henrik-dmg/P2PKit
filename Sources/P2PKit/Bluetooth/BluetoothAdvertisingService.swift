@@ -35,8 +35,8 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
     private let peripheralManager: CBPeripheralManager
     private let peripheralQueue: DispatchQueue
 
-    private let chunkReceiver: BluetoothChunkReceiver
-    private let chunkSender: BluetoothChunkSender
+    private let chunkReceiver: DataChunkReceiver
+    private let chunkSender: DataChunkSender
 
     private let logger = Logger.bluetooth("advertising")
 
@@ -52,8 +52,8 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
         self.service = service
         peripheralQueue = DispatchQueue(label: "peripheralQueue")
         peripheralManager = CBPeripheralManager(delegate: nil, queue: peripheralQueue, options: nil)
-        chunkReceiver = BluetoothChunkReceiver(endOfMessageSignal: endOfMessageSignal)
-        chunkSender = BluetoothChunkSender(endOfMessageSignal: endOfMessageSignal)
+        chunkReceiver = DataChunkReceiver(endOfMessageSignal: endOfMessageSignal)
+        chunkSender = DataChunkSender(endOfMessageSignal: endOfMessageSignal)
         super.init()
         peripheralManager.delegate = self
     }

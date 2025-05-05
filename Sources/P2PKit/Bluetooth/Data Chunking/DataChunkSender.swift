@@ -8,7 +8,7 @@
 import Foundation
 import OSLog
 
-final class BluetoothChunkSender {
+final class DataChunkSender {
 
     // MARK: - Nested Types
 
@@ -17,14 +17,15 @@ final class BluetoothChunkSender {
 
     // MARK: - Properties
 
+    let endOfMessageSignal: Data
+    let endOfMessageSignalSize: Int
+
     private var queuedData: [String: [Data]] = [:]
     private var writeHandlers: [String: ChunkWriteHandler] = [:]
     private var sizeHandlers: [String: ChunkSizeHandler] = [:]
     private var lastWrittenChunkSize: [String: Int] = [:]
 
     private let logger = Logger.bluetooth("chunksender")
-    private let endOfMessageSignal: Data
-    private let endOfMessageSignalSize: Int
 
     // MARK: - Init
 
@@ -41,13 +42,14 @@ final class BluetoothChunkSender {
         chunkSizeHandler: @escaping ChunkSizeHandler,
         chunkWriteHandler: @escaping ChunkWriteHandler
     ) {
+        let dataWithEOM = data + endOfMessageSignal
         if queuedData[peerID] != nil {
-            queuedData[peerID]?.append(data)
+            queuedData[peerID]?.append(dataWithEOM)
         } else {
-            queuedData[peerID] = [data]
+            queuedData[peerID] = [dataWithEOM]
         }
 
-        logger.debug("Queued \(data.count) bytes for \(peerID)")
+        logger.debug("Queued \(dataWithEOM.count) bytes for \(peerID)")
 
         writeHandlers[peerID] = chunkWriteHandler
         sizeHandlers[peerID] = chunkSizeHandler
@@ -62,15 +64,12 @@ final class BluetoothChunkSender {
             logger.warning("No data to remove for \(peerID)")
             return false
         }
-        guard firstChunkData != endOfMessageSignal else {
-            queuedData[peerID]?.removeFirst()
-            return queuedData[peerID]?.isEmpty == false
-        }
 
         firstChunkData.removeFirst(lastWrittenChunkSize)
 
         if firstChunkData.isEmpty {
-            queuedData[peerID]?[0] = endOfMessageSignal
+            queuedData[peerID]?.removeFirst()
+            return queuedData[peerID]?.isEmpty == false
         } else {
             queuedData[peerID]?[0] = firstChunkData
         }

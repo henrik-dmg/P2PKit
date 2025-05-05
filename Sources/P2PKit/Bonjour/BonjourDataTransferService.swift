@@ -5,8 +5,8 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
-import OSLog
 import Network
+import OSLog
 
 @Observable
 public class BonjourDataTransferService: NSObject, PeerDataTransferService {
@@ -30,13 +30,18 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
     @ObservationIgnored
     private let connectionsQueue = DispatchQueue(label: "connectionsQueue")
 
+    private let chunkReceiver: DataChunkReceiver
+    private let chunkSender: DataChunkSender
+
     private let logger = Logger.bonjour("datatransfer")
 
     // MARK: - Init
 
-    public init(ownPeerID: ID, service: S) {
+    public init(ownPeerID: ID, service: S, endOfMessageSingal: Data) {
         self.ownPeerID = ownPeerID
         self.service = service
+        chunkReceiver = DataChunkReceiver(endOfMessageSignal: endOfMessageSingal)
+        chunkSender = DataChunkSender(endOfMessageSignal: endOfMessageSingal)
         super.init()
     }
 
@@ -86,7 +91,10 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
         guard let connection = connections[peerID] else {
             return
         }
-        try await connection.sendData(data)
+        // Send the data followed by the end of message signal.
+        var completeData = data
+        completeData.append(chunkReceiver.endOfMessageSignal)
+        try await send(completeData, to: peerID)
     }
 
     public func disconnect(from peerID: P.ID) {
@@ -96,6 +104,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
         }
         connection.cancel()
         connections[peerID] = nil
+        chunkReceiver.wipeReceivedData(from: peerID)
     }
 
     public func disconnectAll() {
@@ -114,23 +123,32 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
             return
         }
 
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+        // Receive 64KB in a single completion
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, context, isComplete, error in
+            guard let self else {
+                return
+            }
+
             // Check if data was received
             if let data, !data.isEmpty {
-                self?.logger.debug("Received \(data.count) bytes from \(peerID)")
-                self?.delegate?.serviceReceived(data: data, from: peerID)
+                self.logger.debug("Received \(data.count) bytes from \(peerID)")
+
+                if chunkReceiver.receive(data, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
+                    logger.info("Notifying delegate about \(completeData.count) received bytes")
+                    delegate?.serviceReceived(data: completeData, from: peerID)
+                }
             }
 
             // Check for errors or connection end
             if isComplete {
-                self?.logger.info("Receive complete")
+                logger.info("Receive complete")
                 connection.cancel()
             } else if let error {
-                self?.logger.error("Receive error: \(error)")
+                logger.error("Receive error: \(error)")
                 connection.cancel()
             } else {
                 // If no error and not complete, continue receiving
-                self?.receive(on: connection, peerID: peerID)
+                receive(on: connection, peerID: peerID)
             }
         }
     }
