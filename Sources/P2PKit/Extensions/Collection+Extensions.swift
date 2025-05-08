@@ -10,7 +10,8 @@ extension Collection where Index: Strideable {
 
     func chunked(into size: Index.Stride) -> [SubSequence] {
         stride(from: startIndex, to: endIndex, by: size).map { index in
-            self[index..<Swift.min(index.advanced(by: size), endIndex)]
+            let chunkEndIndex = Swift.min(index.advanced(by: size), endIndex)
+            return self[index..<chunkEndIndex]
         }
     }
 

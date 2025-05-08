@@ -94,7 +94,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
         // Send the data followed by the end of message signal.
         var completeData = data
         completeData.append(chunkReceiver.endOfMessageSignal)
-        try await send(completeData, to: peerID)
+        try await connection.sendData(completeData)
     }
 
     public func disconnect(from peerID: P.ID) {
