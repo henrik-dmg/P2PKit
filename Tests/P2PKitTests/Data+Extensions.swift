@@ -9,6 +9,6 @@ import Foundation
 
 extension Data {
 
-    static let bluetoothEOM = "EOM".data(using: .utf8)!
+    static let defaultEndOfMessageSignal = "EOM".data(using: .utf8)!
 
 }

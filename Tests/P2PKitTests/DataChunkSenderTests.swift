@@ -18,7 +18,7 @@ struct DataChunkSenderTests {
     func sendsAllData() throws {
         var writtenChunks: [Data] = []
 
-        let sender = DataChunkSender(endOfMessageSignal: .bluetoothEOM)
+        let sender = DataChunkSender(endOfMessageSignal: .defaultEndOfMessageSignal)
         sender.queue("Hello World".data(using: .utf8)!, to: "test") {
             3
         } chunkWriteHandler: { chunk in
@@ -31,7 +31,7 @@ struct DataChunkSenderTests {
         } while sender.markChunkAsSent(for: "test")
 
         #expect(writtenChunks.count == 5)
-        #expect(Data(writtenChunks.joined()) == "Hello World".data(using: .utf8)! + .bluetoothEOM)
+        #expect(Data(writtenChunks.joined()) == "Hello World".data(using: .utf8)! + .defaultEndOfMessageSignal)
     }
 
 }

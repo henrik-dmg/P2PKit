@@ -16,10 +16,10 @@ struct DataChunkReceiverTests {
 
     @Test
     func receivesCompleteMessage() async throws {
-        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        let receiver = DataChunkReceiver(endOfMessageSignal: .defaultEndOfMessageSignal)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
         #expect(!receiver.receive("World".data(using: .utf8)!, from: "test"))
-        #expect(receiver.receive(.bluetoothEOM, from: "test"))
+        #expect(receiver.receive(.defaultEndOfMessageSignal, from: "test"))
 
         let fullData = try #require(receiver.allReceivedData(from: "test"))
         #expect(fullData == "HelloWorld".data(using: .utf8))
@@ -27,9 +27,9 @@ struct DataChunkReceiverTests {
 
     @Test
     func receivesCompleteMessageWithEOMInLastChunk() async throws {
-        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        let receiver = DataChunkReceiver(endOfMessageSignal: .defaultEndOfMessageSignal)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
-        #expect(receiver.receive("World".data(using: .utf8)! + .bluetoothEOM, from: "test"))
+        #expect(receiver.receive("World".data(using: .utf8)! + .defaultEndOfMessageSignal, from: "test"))
 
         let fullData = try #require(receiver.allReceivedData(from: "test"))
         #expect(fullData == "HelloWorld".data(using: .utf8))
@@ -37,21 +37,21 @@ struct DataChunkReceiverTests {
 
     @Test
     func receivesOnlyEOM() async throws {
-        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
-        #expect(receiver.receive(.bluetoothEOM, from: "test"))
+        let receiver = DataChunkReceiver(endOfMessageSignal: .defaultEndOfMessageSignal)
+        #expect(receiver.receive(.defaultEndOfMessageSignal, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == nil)
     }
 
     @Test
     func wipesOldDataAfterEOM() async throws {
-        let receiver = DataChunkReceiver(endOfMessageSignal: .bluetoothEOM)
+        let receiver = DataChunkReceiver(endOfMessageSignal: .defaultEndOfMessageSignal)
         #expect(!receiver.receive("Hello".data(using: .utf8)!, from: "test"))
-        #expect(receiver.receive(.bluetoothEOM, from: "test"))
+        #expect(receiver.receive(.defaultEndOfMessageSignal, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == "Hello".data(using: .utf8))
 
         #expect(!receiver.receive("World".data(using: .utf8)!, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == nil)
-        #expect(receiver.receive(.bluetoothEOM, from: "test"))
+        #expect(receiver.receive(.defaultEndOfMessageSignal, from: "test"))
         #expect(receiver.allReceivedData(from: "test") == "World".data(using: .utf8))
     }
 
