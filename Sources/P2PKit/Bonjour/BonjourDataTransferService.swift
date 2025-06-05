@@ -124,6 +124,8 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
         }
 
         // Receive 64KB in a single completion
+        // Since we can dispatch all data at once (compared to CoreBluetooth),
+        // we can hardcode max length because we don't need to sync with the size of chunks that are sent.
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, context, isComplete, error in
             guard let self else {
                 return
