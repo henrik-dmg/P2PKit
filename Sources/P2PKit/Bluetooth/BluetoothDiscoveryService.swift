@@ -91,10 +91,9 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
 
     private func handlePeripheralConnected(_ peripheral: CBPeripheral) {
         let peerID = peerID(for: peripheral)
+        connectedPheripherals[peerID] = peripheral
         peripheral.delegate = self
         peripheral.discoverServices(nil)
-        connectedPheripherals[peerID] = peripheral
-        delegate?.serviceDidConnectToPeer(with: peerID)
     }
 
     private func handlePeripheralDisconnected(_ peripheral: CBPeripheral) {
@@ -253,21 +252,29 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
             return
         }
 
-        guard let characteristics = service.characteristics else {
+        guard let characteristics = service.characteristics, !characteristics.isEmpty else {
+            logger.error("No characteristics for service found")
             return
         }
 
         logger.info("Discovered \(characteristics.count) characteristics for peripheral \(peripheral.safeName)")
 
+        let peerID = peerID(for: peripheral)
+
         for characteristic in characteristics {
             let properties = characteristic.properties
             if properties.contains(.write) || properties.contains(.writeWithoutResponse) {
-                if let peerID = connectedPheripherals.first(where: { $0.value == peripheral })?.key {
-                    writeCharacteristics[peerID] = characteristic
+                if writeCharacteristics[peerID] != nil {
+                    logger.warning("Already has a write characteristic for peer \(peerID)")
                 }
+                writeCharacteristics[peerID] = characteristic
             }
 
             peripheral.setNotifyValue(true, for: characteristic)
+        }
+
+        if writeCharacteristics[peerID] != nil {
+            delegate?.serviceDidConnectToPeer(with: peerID)
         }
     }
 
