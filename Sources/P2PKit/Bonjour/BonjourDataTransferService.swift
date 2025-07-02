@@ -32,9 +32,8 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
     private let connectionsQueue = DispatchQueue(label: "connectionsQueue")
 
     private let chunkReceiver: DataChunkReceiver
-    private let chunkSender: DataChunkSender
-
     private let logger = Logger.bonjour("datatransfer")
+    private let byteCountFormatter = ByteCountFormatter()
 
     // MARK: - Init
 
@@ -42,7 +41,6 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
         self.ownPeerID = ownPeerID
         self.service = service
         chunkReceiver = DataChunkReceiver(endOfMessageSignal: endOfMessageSingal)
-        chunkSender = DataChunkSender(endOfMessageSignal: endOfMessageSingal)
         super.init()
     }
 
@@ -95,7 +93,11 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
         // Send the data followed by the end of message signal.
         var completeData = data
         completeData.append(chunkReceiver.endOfMessageSignal)
+
+        let formattedDataSize = byteCountFormatter.string(fromByteCount: Int64(completeData.count))
+        logger.info("Sending \(formattedDataSize) to peer \(peerID)")
         try await connection.sendData(completeData)
+        logger.info("Successfully sent \(formattedDataSize) to peer \(peerID)")
     }
 
     public func disconnect(from peerID: P.ID) {
@@ -134,17 +136,17 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
             // Check if data was received
             if let data, !data.isEmpty {
-                self.logger.debug("Received \(data.count) bytes from \(peerID)")
+                logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
 
                 if chunkReceiver.receive(data, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
-                    logger.info("Notifying delegate about \(completeData.count) received bytes")
+                    logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(completeData.count))) from \(peerID)")
                     delegate?.serviceReceived(data: completeData, from: peerID)
                 }
             }
 
             // Check for errors or connection end
             if isComplete {
-                logger.info("Receive complete")
+                logger.info("Receive \(peerID) complete")
                 connection.cancel()
             } else if let error {
                 logger.error("Receive error: \(error)")

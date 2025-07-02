@@ -42,6 +42,7 @@ public final class MultipeerDiscoveryService: MultipeerDataTransferService, Peer
     // MARK: - Overridden Methods
 
     public override func connect(to peer: P) {
+        logger.info("Inviting \(peer.identifier) to session")
         browser.invitePeer(peer.identifier, to: session, withContext: nil, timeout: 10)
     }
 

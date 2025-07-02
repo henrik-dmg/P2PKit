@@ -43,6 +43,7 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
     private let chunkSender: DataChunkSender
 
     private let logger = Logger.bluetooth("discovery")
+    private let byteCountFormatter = ByteCountFormatter()
 
     // MARK: - Init
 
@@ -124,6 +125,7 @@ extension BluetoothDiscoveryService: PeerDataTransferService {
             return
         }
 
+        logger.info("Sending \(byteCountFormatter.string(fromByteCount: Int64(data.count))) to peer \(peerID)")
         chunkSender.queue(data, to: peerID) {
             peripheral.maximumWriteValueLength(for: .withResponse)
         } chunkWriteHandler: { chunk in
@@ -291,15 +293,15 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
 
         let peerID = peerID(for: peripheral)
 
-        guard let characteristicData = characteristic.value else {
+        guard let data = characteristic.value else {
             logger.warning("Characterisic \(characteristic.uuid) value was updated but is nil")
             return
         }
 
-        logger.trace("Received \(characteristicData.count) bytes from \(peerID) for characteristic \(characteristic.uuid)")
+        logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
 
-        if chunkReceiver.receive(characteristicData, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
-            logger.info("Notifying delegate about \(completeData.count) received bytes")
+        if chunkReceiver.receive(data, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
+            logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(completeData.count))) from \(peerID)")
             delegate?.serviceReceived(data: completeData, from: peerID)
         }
     }

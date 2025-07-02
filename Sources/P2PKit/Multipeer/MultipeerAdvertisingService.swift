@@ -68,7 +68,7 @@ extension MultipeerAdvertisingService: MCNearbyServiceAdvertiserDelegate {
         withContext context: Data?,
         invitationHandler: @escaping (Bool, MCSession?) -> Void
     ) {
-        logger.info("Did receive invitation from \(peerID.displayName)")
+        logger.info("Received invitation from \(peerID.displayName)")
         invitationHandler(true, session)
     }
 

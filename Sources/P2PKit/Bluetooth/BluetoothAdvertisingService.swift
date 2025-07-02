@@ -39,6 +39,7 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
     private let chunkSender: DataChunkSender
 
     private let logger = Logger.bluetooth("advertising")
+    private let byteCountFormatter = ByteCountFormatter()
 
     @ObservationIgnored
     private lazy var cbService: CBMutableService = makeService()
@@ -139,6 +140,7 @@ extension BluetoothAdvertisingService: PeerDataTransferService {
             return
         }
 
+        logger.info("Sending \(byteCountFormatter.string(fromByteCount: Int64(data.count))) to peer \(peerID)")
         chunkSender.queue(data, to: peerID) {
             central.maximumUpdateValueLength
         } chunkWriteHandler: { [weak self] chunk in
@@ -261,8 +263,10 @@ extension BluetoothAdvertisingService: CBPeripheralManagerDelegate {
             peripheralManager.respond(to: request, withResult: .success)
 
             let peerID = request.central.identifier.uuidString
+            logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
+
             if chunkReceiver.receive(data, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
-                logger.info("Notifying delegate about \(completeData.count) received bytes")
+                logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(completeData.count))) from \(peerID)")
                 delegate?.serviceReceived(data: completeData, from: peerID)
             }
         }
