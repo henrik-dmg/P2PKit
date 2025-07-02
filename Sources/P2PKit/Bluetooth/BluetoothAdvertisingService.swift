@@ -7,7 +7,7 @@
 
 import CoreBluetooth
 import Foundation
-import OSLog
+import Logging
 import Observation
 
 @Observable

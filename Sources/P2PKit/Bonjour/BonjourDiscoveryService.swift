@@ -5,8 +5,9 @@
 //  Created by Henrik Panhans on 07.03.25.
 //
 
+import Foundation
+import Logging
 import Network
-import OSLog
 
 @Observable
 public final class BonjourDiscoveryService: BonjourDataTransferService, PeerDiscoveryService {

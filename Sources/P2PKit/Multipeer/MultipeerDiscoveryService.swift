@@ -5,8 +5,8 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
+import Logging
 import MultipeerConnectivity
-import OSLog
 import Observation
 
 @Observable

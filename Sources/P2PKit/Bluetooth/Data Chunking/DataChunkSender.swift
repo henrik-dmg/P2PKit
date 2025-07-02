@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import OSLog
+import Logging
 
 final class DataChunkSender {
 

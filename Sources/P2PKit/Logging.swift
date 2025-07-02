@@ -5,7 +5,7 @@
 //  Created by Henrik Panhans on 07.04.25.
 //
 
-import OSLog
+import Logging
 
 extension Logger {
 
@@ -14,13 +14,13 @@ extension Logger {
     }
 
     static func multipeer(_ subCategory: String) -> Logger {
-        Logger(subsystem: subsystem, category: "multipeer-\(subCategory)")
+        Logger(label: subsystem + ".multipeer-\(subCategory)")
     }
     static func bluetooth(_ subCategory: String) -> Logger {
-        Logger(subsystem: subsystem, category: "bluetooth-\(subCategory)")
+        Logger(label: subsystem + ".bluetooth-\(subCategory)")
     }
     static func bonjour(_ subCategory: String) -> Logger {
-        Logger(subsystem: subsystem, category: "bonjour-\(subCategory)")
+        Logger(label: subsystem + ".bonjour-\(subCategory)")
     }
 
 }

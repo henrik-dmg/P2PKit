@@ -5,8 +5,9 @@
 //  Created by Henrik Panhans on 23.03.25.
 //
 
+import Foundation
+import Logging
 import Network
-import OSLog
 
 @Observable
 public class BonjourDataTransferService: NSObject, PeerDataTransferService {

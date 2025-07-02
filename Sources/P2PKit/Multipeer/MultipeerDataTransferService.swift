@@ -6,8 +6,8 @@
 //
 
 import Foundation
+import Logging
 import MultipeerConnectivity
-import OSLog
 import Observation
 
 @Observable
