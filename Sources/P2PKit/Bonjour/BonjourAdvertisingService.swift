@@ -41,8 +41,6 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
 
     public func stopAdvertisingService() {
         listener?.cancel()
-        listener = nil
-        state = .inactive
     }
 
     // MARK: - Helpers
@@ -50,27 +48,28 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
     private func makeListener() throws -> NWListener {
         let parameters = NWParameters.applicationService
         parameters.includePeerToPeer = true  // Allow discovery on AWDL, etc.
+        parameters.allowLocalEndpointReuse = true
 
         let service = NWListener.Service(name: ownPeerID, type: service.type)
         let listener = try NWListener(service: service, using: parameters)
         listener.stateUpdateHandler = { [weak self] (newState: NWListener.State) in
-            guard let self else {
-                return
-            }
             switch newState {
             case .setup:
-                logger.info("Listener setting up")
+                self?.logger.info("Listener setting up")
             case let .waiting(error):
-                logger.error("Listener waiting with error: \(error)")
+                self?.logger.error("Listener waiting with error: \(error)")
             case .ready:
-                logger.info("Listener ready")
+                self?.logger.info("Listener ready")
             case let .failed(error):
-                logger.error("Listener error: \(error)")
+                self?.logger.error("Listener error: \(error)")
+                self?.updateState(.error(error))
+                self?.disconnectAll()
             case .cancelled:
-                logger.info("Listener stopped")
-                disconnectAll()
+                self?.logger.info("Listener stopped")
+                self?.updateState(.inactive)
+                self?.disconnectAll()
             @unknown default:
-                logger.warning("Unknown listener state: \(String(describing: newState))")
+                self?.logger.warning("Unknown listener state: \(String(describing: newState))")
             }
         }
 
@@ -81,16 +80,15 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
         }
 
         listener.serviceRegistrationUpdateHandler = { [weak self] registrationState in
-            guard let self else {
-                return
-            }
             switch registrationState {
             case .add:
-                updateState(.active)
+                self?.logger.info("Service added")
+                self?.updateState(.active)
             case .remove:
-                updateState(.inactive)
+                self?.logger.info("Service removed")
             @unknown default:
-                logger.warning("Unknown service registration state: \(String(describing: registrationState))")
+                self?.logger.warning(
+                    "Unknown service registration state: \(String(describing: registrationState))")
             }
         }
 
@@ -100,13 +98,12 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
     private func updateState(_ newState: ServiceState) {
         switch newState {
         case .active:
-            logger.info("Service added")
             advertisingDelegate?.serviceDidStartAdvertising(service)
         case .inactive:
-            logger.info("Service removed")
             advertisingDelegate?.serviceDidStopAdvertising(service)
+            listener = nil
         case let .error(error):
-            logger.error("Advertiser did not start: \(error)")
+            advertisingDelegate?.serviceDidEncounterError(service, error: error)
         }
         state = newState
     }

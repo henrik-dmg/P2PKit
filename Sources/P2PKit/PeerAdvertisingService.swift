@@ -22,7 +22,8 @@ public protocol PeerAdvertisingServiceDelegate<S>: AnyObject {
 
     associatedtype S: Service
 
-    func serviceDidStartAdvertising(_ service: Service)
-    func serviceDidStopAdvertising(_ service: Service)
+    func serviceDidStartAdvertising(_ service: S)
+    func serviceDidStopAdvertising(_ service: S)
+    func serviceDidEncounterError(_ service: S, error: Error)
 
 }
