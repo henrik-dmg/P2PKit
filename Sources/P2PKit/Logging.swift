@@ -9,18 +9,14 @@ import Logging
 
 extension Logger {
 
-    private static var subsystem: String {
-        "dev.panhans.P2PKit"
-    }
-
     static func multipeer(_ subCategory: String) -> Logger {
-        Logger(label: subsystem + ".multipeer-\(subCategory)")
+        Logger(label: "multipeer-\(subCategory)")
     }
     static func bluetooth(_ subCategory: String) -> Logger {
-        Logger(label: subsystem + ".bluetooth-\(subCategory)")
+        Logger(label: "bluetooth-\(subCategory)")
     }
     static func bonjour(_ subCategory: String) -> Logger {
-        Logger(label: subsystem + ".bonjour-\(subCategory)")
+        Logger(label: "bonjour-\(subCategory)")
     }
 
 }

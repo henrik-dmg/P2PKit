@@ -263,7 +263,7 @@ extension BluetoothAdvertisingService: CBPeripheralManagerDelegate {
             peripheralManager.respond(to: request, withResult: .success)
 
             let peerID = request.central.identifier.uuidString
-            logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
+            logger.trace("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
 
             if chunkReceiver.receive(data, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
                 logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(completeData.count))) from \(peerID)")

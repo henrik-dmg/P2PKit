@@ -298,7 +298,7 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
             return
         }
 
-        logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
+        logger.trace("Received \(byteCountFormatter.string(fromByteCount: Int64(data.count))) (partial) from \(peerID)")
 
         if chunkReceiver.receive(data, from: peerID), let completeData = chunkReceiver.allReceivedData(from: peerID) {
             logger.info("Received \(byteCountFormatter.string(fromByteCount: Int64(completeData.count))) from \(peerID)")
