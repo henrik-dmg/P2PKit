@@ -79,7 +79,6 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
             let peer = BonjourPeer(endpoint: connection.endpoint)
             self?.connect(with: connection, peerID: peer.id)
         }
-        listener.newConnectionLimit = 1
 
         listener.serviceRegistrationUpdateHandler = { [weak self] registrationState in
             guard let self else {

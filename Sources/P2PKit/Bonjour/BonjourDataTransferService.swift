@@ -74,7 +74,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
             case let .failed(error):
                 logger.error("Connection to \(peerID) failed: \(error)")
                 delegate?.serviceDidFailToConnectToPeer(with: peerID, error: error)
-                disconnect(from: peerID)
+                cleanUpConnection(for: peerID)
             case .cancelled:
                 logger.info("Connection to \(peerID) was stopped")
                 delegate?.serviceDidDisconnectFromPeer(with: peerID)

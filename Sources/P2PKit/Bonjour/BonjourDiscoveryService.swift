@@ -79,25 +79,34 @@ public final class BonjourDiscoveryService: BonjourDataTransferService, PeerDisc
                 case let .added(result):
                     let peer = BonjourPeer(endpoint: result.endpoint)
 
-                    self?.logger.debug("+ \(peer.id)")
-                    self?.logger.debug("+ \(result.interfaces.debugDescription)")
-
+                    self?.logger.debug("Discovered \(peer.id)", metadata: ["interfaces": .stringConvertible(result.interfaces)])
                     self?.discoveredPeers[peer.id] = peer
                 case let .removed(result):
                     let peer = BonjourPeer(endpoint: result.endpoint)
 
-                    self?.logger.debug("- \(peer.id)")
-                    self?.logger.debug("- \(result.interfaces)")
-
+                    self?.logger.debug("Lost \(peer.id)", metadata: ["interfaces": .stringConvertible(result.interfaces)])
                     self?.discoveredPeers[peer.id] = nil
                 case let .changed(old, new, flags):
+                    guard !flags.contains(.identical) else {
+                        self?.logger.error("Ignoring identical peer update")
+                        continue
+                    }
+
                     let oldPeer = BonjourPeer(endpoint: old.endpoint)
                     let newPeer = BonjourPeer(endpoint: new.endpoint)
 
-                    self?.logger.debug("± \(oldPeer.id) -> \(newPeer.id)")
-                    self?.logger.debug("± \(old.endpoint.debugDescription) -> \(new.endpoint.debugDescription)")
-                    self?.logger.debug("± \(String(describing: flags))")
-                    self?.logger.debug("± \(old.interfaces.debugDescription) -> \(new.interfaces.debugDescription)")
+                    self?.logger.debug(
+                        "Updated \(oldPeer.id)",
+                        metadata: [
+                            "old-peer-id": .string(oldPeer.id),
+                            "new-peer-id": .string(newPeer.id),
+                            "old-interfaces": .stringConvertible(old.interfaces),
+                            "new-interfaces": .stringConvertible(new.interfaces),
+                            "metadata-changed": .stringConvertible(flags.contains(.metadataChanged)),
+                            "interface-added": .stringConvertible(flags.contains(.interfaceAdded)),
+                            "interface-removed": .stringConvertible(flags.contains(.interfaceRemoved))
+                        ]
+                    )
 
                     self?.discoveredPeers[oldPeer.id] = nil
                     self?.discoveredPeers[newPeer.id] = newPeer
