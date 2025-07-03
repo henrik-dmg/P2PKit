@@ -163,11 +163,7 @@ extension BluetoothAdvertisingService: PeerDataTransferService {
     }
 
     public func disconnect(from peerID: ID) {
-        // TODO: Look into actually closing connection
-        // guard let central = centrals[peerID] else {
-        //     logger.error("No central \(peerID) to disconnect from")
-        //     return
-        // }
+        logger.error("Can't disconnect from CBCentral connections when in peripheral mode.")
 
         // Remove the central from our tracking
         centrals[peerID] = nil

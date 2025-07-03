@@ -28,7 +28,8 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
 
     public func startAdvertisingService() {
         guard listener == nil else {
-            return  // TODO: Throw error
+            logger.error("Tried to start advertising service multiple times")
+            return
         }
         do {
             listener = try makeListener()

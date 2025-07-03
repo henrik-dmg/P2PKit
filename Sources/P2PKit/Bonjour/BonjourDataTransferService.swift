@@ -53,7 +53,8 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
     func connect(with connection: NWConnection, peerID: P.ID) {
         guard connections[peerID] == nil else {
-            return  // Already connected to peer
+            logger.warning("Already has connection to \(peerID)")
+            return
         }
         connection.stateUpdateHandler = { [weak self] newState in
             guard let self else {
@@ -77,9 +78,27 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
             case .cancelled:
                 logger.info("Connection to \(peerID) was stopped")
                 delegate?.serviceDidDisconnectFromPeer(with: peerID)
-                disconnect(from: peerID)
+                cleanUpConnection(for: peerID)
             @unknown default:
                 logger.warning("Unknown connection state: \(String(describing: newState))")
+            }
+        }
+        connection.pathUpdateHandler = { [weak self] newPath in
+            guard let self else {
+                return
+            }
+
+            let usedInterfaces = newPath.availableInterfaces.filter { newPath.usesInterfaceType($0.type) }.map { $0.name }.joined(separator: ",")
+
+            switch newPath.status {
+            case .satisfied:
+                logger.debug("Path for \(peerID) is satisfied", metadata: ["interfaces": .string(usedInterfaces)])
+            case .unsatisfied:
+                logger.debug("Path for \(peerID) is unsatisfied", metadata: ["interfaces": .string(usedInterfaces)])
+            case .requiresConnection:
+                logger.debug("Path for \(peerID) requires connection", metadata: ["interfaces": .string(usedInterfaces)])
+            @unknown default:
+                logger.warning("Unknown path status for \(peerID): \(String(describing: newPath.status))")
             }
         }
         connection.start(queue: connectionsQueue)
@@ -105,9 +124,8 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
             logger.warning("No connection to \(peerID) to cancel")
             return
         }
+        logger.debug("Cancelling connection to \(peerID)")
         connection.cancel()
-        connections[peerID] = nil
-        chunkReceiver.wipeReceivedData(from: peerID)
     }
 
     public func disconnectAll() {
@@ -120,7 +138,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
     // MARK: - Helpers
 
     // Receives messages continuously from a given connection
-    func receive(on connection: NWConnection, peerID: P.ID) {
+    private func receive(on connection: NWConnection, peerID: P.ID) {
         guard connectedPeers.contains(peerID) else {
             logger.warning("Stopping receive for disconnected peer \(peerID)")
             return
@@ -146,16 +164,22 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
             // Check for errors or connection end
             if isComplete {
-                logger.info("Receive \(peerID) complete")
-                connection.cancel()
+                logger.info("Receive from \(peerID) complete")
+                disconnect(from: peerID)
             } else if let error {
                 logger.error("Receive error: \(error)")
-                connection.cancel()
+                disconnect(from: peerID)
             } else {
                 // If no error and not complete, continue receiving
                 receive(on: connection, peerID: peerID)
             }
         }
+    }
+
+    private func cleanUpConnection(for peerID: P.ID) {
+        connections[peerID] = nil
+        chunkReceiver.wipeReceivedData(from: peerID)
+        logger.debug("Cleaned up connection to \(peerID)")
     }
 
 }

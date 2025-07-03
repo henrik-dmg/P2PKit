@@ -117,6 +117,7 @@ extension BluetoothDiscoveryService: PeerDataTransferService {
             return
         }
 
+        logger.info("Connecting to \(peer.name)")
         centralManager.connect(peer.peripheral, options: [:])
     }
 
@@ -179,8 +180,8 @@ extension BluetoothDiscoveryService: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
-        logger.info("Discovered peripheral: \(peripheral.identifier) with RSSI \(RSSI)")
         let peerID = peerID(for: peripheral)
+        logger.info("Discovered peripheral \(peerID) with RSSI \(RSSI)")
         discoveredPheripherals[peerID] = BluetoothPeer(
             peripheral: peripheral,
             advertisementData: advertisementData
@@ -188,7 +189,8 @@ extension BluetoothDiscoveryService: CBCentralManagerDelegate {
     }
 
     public func centralManager(_ centralManager: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        logger.info("Connected to peripheral: \(peripheral.safeName)")
+        let peerID = peerID(for: peripheral)
+        logger.info("Connected to peripheral \(peerID), but haven't discovered services yet")
         handlePeripheralConnected(peripheral)
     }
 
@@ -197,7 +199,8 @@ extension BluetoothDiscoveryService: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: (any Error)?
     ) {
-        logger.error("Failed to connect to peripheral \(peripheral.safeName): \(error?.localizedDescription ?? "unknown")")
+        let peerID = peerID(for: peripheral)
+        logger.error("Failed to connect to peripheral \(peerID): \(error?.localizedDescription ?? "reason unknown")")
     }
 
     public func centralManager(
@@ -205,23 +208,11 @@ extension BluetoothDiscoveryService: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: (any Error)?
     ) {
-        logger.info("Disconnected from peripheral 1: \(peripheral.safeName)")
+        let peerID = peerID(for: peripheral)
         if let error {
-            logger.error("Disconnect error 1: \(error)")
-        }
-        handlePeripheralDisconnected(peripheral)
-    }
-
-    public func centralManager(
-        _ centralManager: CBCentralManager,
-        didDisconnectPeripheral peripheral: CBPeripheral,
-        timestamp: CFAbsoluteTime,
-        isReconnecting: Bool,
-        error: (any Error)?
-    ) {
-        logger.info("Disconnected from peripheral 2: \(peripheral.safeName)")
-        if let error {
-            logger.error("Disconnect error 2: \(error)")
+            logger.error("Error disconnecting from : \(error)")
+        } else {
+            logger.info("Disconnected from peripheral \(peerID)")
         }
         handlePeripheralDisconnected(peripheral)
     }
@@ -243,31 +234,32 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
         }
 
         for service in services where service.uuid == self.service.uuid {
+            logger.debug("Discoverred service \(service.uuid) for peripheral \(peripheral.safeName)")
             peripheral.discoverCharacteristics([self.service.characteristicUUID], for: service)
             break
         }
     }
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        let peerID = peerID(for: peripheral)
+
         if let error {
-            logger.error("Error discovering characteristic: \(error.localizedDescription)")
+            logger.error("Error discovering characteristic for peripheral \(peerID): \(error.localizedDescription)")
             return
         }
 
         guard let characteristics = service.characteristics, !characteristics.isEmpty else {
-            logger.error("No characteristics for service found")
+            logger.error("No characteristics for service found for peripheral \(peerID)")
             return
         }
 
-        logger.info("Discovered \(characteristics.count) characteristics for peripheral \(peripheral.safeName)")
-
-        let peerID = peerID(for: peripheral)
+        logger.info("Discovered \(characteristics.count) characteristics for peripheral \(peerID)")
 
         for characteristic in characteristics {
             let properties = characteristic.properties
             if properties.contains(.write) || properties.contains(.writeWithoutResponse) {
                 if writeCharacteristics[peerID] != nil {
-                    logger.warning("Already has a write characteristic for peer \(peerID)")
+                    logger.warning("Already has a write characteristic for peripheral \(peerID)")
                 }
                 writeCharacteristics[peerID] = characteristic
             }
@@ -276,6 +268,7 @@ extension BluetoothDiscoveryService: CBPeripheralDelegate {
         }
 
         if writeCharacteristics[peerID] != nil {
+            logger.debug("Fully connected to peer \(peerID)")
             delegate?.serviceDidConnectToPeer(with: peerID)
         }
     }
