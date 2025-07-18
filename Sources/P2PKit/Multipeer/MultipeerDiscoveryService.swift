@@ -30,11 +30,13 @@ public final class MultipeerDiscoveryService: MultipeerDataTransferService, Peer
 
     public func startDiscoveringPeers() {
         browser.startBrowsingForPeers()
+        logger.info("Browser started")
         state = .active
     }
 
     public func stopDiscoveringPeers() {
         browser.stopBrowsingForPeers()
+        logger.info("Browser stopped")
         discoveredPeers.removeAll()
         state = .inactive
     }
@@ -61,7 +63,13 @@ public final class MultipeerDiscoveryService: MultipeerDataTransferService, Peer
 extension MultipeerDiscoveryService: MCNearbyServiceBrowserDelegate {
 
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
-        logger.info("Browser found peer \(peerID.displayName)")
+        let mappedInfo = (info ?? [:]).mapValues {
+            Logger.MetadataValue.string($0)
+        }
+        logger.info(
+            "Browser found peer \(peerID.displayName)",
+            metadata: ["discovery-info": .dictionary(mappedInfo)]
+        )
         discoveredPeers[peerID.displayName] = MultipeerPeer(identifier: peerID, info: info)
     }
 

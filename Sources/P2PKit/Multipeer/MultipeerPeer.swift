@@ -15,7 +15,7 @@ public struct MultipeerPeer: Peer {
     public let info: [String: String]?
 
     public var id: ID {
-        identifier.displayName
+        identifier.displayName // This is not ideal as people can set the same name
     }
 
     // MARK: - Init

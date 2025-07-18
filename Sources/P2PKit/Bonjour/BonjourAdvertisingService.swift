@@ -47,8 +47,7 @@ public final class BonjourAdvertisingService: BonjourDataTransferService, PeerAd
 
     private func makeListener() throws -> NWListener {
         let parameters = NWParameters.applicationService
-        parameters.includePeerToPeer = true  // Allow discovery on AWDL, etc.
-        parameters.allowLocalEndpointReuse = true
+        parameters.includePeerToPeer = false  // Allow discovery on AWDL, etc.
 
         let service = NWListener.Service(name: ownPeerID, type: service.type)
         let listener = try NWListener(service: service, using: parameters)

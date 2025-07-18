@@ -18,6 +18,11 @@ public class MultipeerDataTransferService: NSObject, PeerDataTransferService {
     public typealias P = MultipeerPeer
     public typealias S = MultipeerService
 
+    enum SendError: LocalizedError {
+        case peerIDNotFound(P.ID)
+        case peerNotConnected(P.ID)
+    }
+
     // MARK: - Properties
 
     public let ownPeerID: ID
@@ -35,7 +40,7 @@ public class MultipeerDataTransferService: NSObject, PeerDataTransferService {
     lazy var ownMCPeerID = MCPeerID(displayName: ownPeerID)
 
     private let logger = Logger.multipeer("datatransfer")
-    private let byteCountFormatter = ByteCountFormatter()
+    private let byteCountFormatter = ByteCountFormatter.default
 
     // MARK: - Init
 
@@ -65,12 +70,13 @@ public class MultipeerDataTransferService: NSObject, PeerDataTransferService {
 
     public func send(_ data: Data, to peerID: ID) async throws {
         guard let storedPeerID = connections[peerID] else {
-            logger.warning("No stored peerID for \(peerID)")
-            return
+            logger.error("No stored peerID for \(peerID)")
+            throw SendError.peerIDNotFound(peerID)
         }
         guard session.connectedPeers.contains(storedPeerID) else {
-            logger.warning("Stored peer \(storedPeerID) not connected")
-            return
+            logger.error("Stored peer \(storedPeerID) not connected")
+            connections[peerID] = nil
+            throw SendError.peerNotConnected(peerID)
         }
         let formattedDataSize = byteCountFormatter.string(fromByteCount: Int64(data.count))
         logger.info("Sending \(formattedDataSize) to peer \(peerID)")
@@ -92,6 +98,10 @@ public class MultipeerDataTransferService: NSObject, PeerDataTransferService {
         let session = MCSession(peer: ownMCPeerID, securityIdentity: nil, encryptionPreference: .none)
         session.delegate = self
         return session
+    }
+
+    func peerID(for mcPeerID: MCPeerID) -> P.ID {
+        MultipeerPeer(identifier: mcPeerID, info: nil).id
     }
 
 }
@@ -132,7 +142,7 @@ extension MultipeerDataTransferService: MCSessionDelegate {
         fromPeer peerID: MCPeerID,
         with progress: Progress
     ) {
-        logger.info("Session did receiving resource with name \(resourceName) from \(peerID.displayName)")
+        logger.info("Session did start receiving resource with name \(resourceName) from \(peerID.displayName)")
     }
 
     public func session(

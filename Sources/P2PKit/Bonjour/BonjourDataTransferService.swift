@@ -17,6 +17,10 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
     public typealias P = BonjourPeer
     public typealias S = BonjourService
 
+    enum SendError: LocalizedError {
+        case noConnectionToPeer(P.ID)
+    }
+
     // MARK: - Properties
 
     public let ownPeerID: ID
@@ -33,7 +37,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
     private let chunkReceiver: DataChunkReceiver
     private let logger = Logger.bonjour("datatransfer")
-    private let byteCountFormatter = ByteCountFormatter()
+    private let byteCountFormatter = ByteCountFormatter.default
 
     // MARK: - Init
 
@@ -53,7 +57,7 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
     func connect(with connection: NWConnection, peerID: P.ID) {
         guard connections[peerID] == nil else {
-            logger.warning("Already has connection to \(peerID)")
+            logger.error("Already has connection to \(peerID)")
             return
         }
         connection.stateUpdateHandler = { [weak self] newState in
@@ -107,7 +111,8 @@ public class BonjourDataTransferService: NSObject, PeerDataTransferService {
 
     public func send(_ data: Data, to peerID: String) async throws {
         guard let connection = connections[peerID] else {
-            return
+            logger.error("No stored connection for \(peerID)")
+            throw SendError.noConnectionToPeer(peerID)
         }
         // Send the data followed by the end of message signal.
         var completeData = data

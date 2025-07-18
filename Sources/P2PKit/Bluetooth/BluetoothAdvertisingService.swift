@@ -39,7 +39,7 @@ public final class BluetoothAdvertisingService: NSObject, PeerAdvertisingService
     private let chunkSender: DataChunkSender
 
     private let logger = Logger.bluetooth("advertising")
-    private let byteCountFormatter = ByteCountFormatter()
+    private let byteCountFormatter = ByteCountFormatter.default
 
     @ObservationIgnored
     private lazy var cbService: CBMutableService = makeService()

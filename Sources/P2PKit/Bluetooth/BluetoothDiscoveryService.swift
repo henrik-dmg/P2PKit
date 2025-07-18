@@ -43,7 +43,7 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
     private let chunkSender: DataChunkSender
 
     private let logger = Logger.bluetooth("discovery")
-    private let byteCountFormatter = ByteCountFormatter()
+    private let byteCountFormatter = ByteCountFormatter.default
 
     // MARK: - Init
 
@@ -86,8 +86,8 @@ public class BluetoothDiscoveryService: NSObject, PeerDiscoveryService {
         state = centralManager.isScanning ? .active : .inactive
     }
 
-    private func peerID(for peripheral: CBPeripheral) -> ID {
-        peripheral.identifier.uuidString
+    private func peerID(for peripheral: CBPeripheral) -> P.ID {
+        BluetoothPeer(peripheral: peripheral, advertisementData: [:]).id
     }
 
     private func handlePeripheralConnected(_ peripheral: CBPeripheral) {
@@ -128,7 +128,7 @@ extension BluetoothDiscoveryService: PeerDataTransferService {
 
         logger.info("Sending \(byteCountFormatter.string(fromByteCount: Int64(data.count))) to peer \(peerID)")
         chunkSender.queue(data, to: peerID) {
-            peripheral.maximumWriteValueLength(for: .withResponse)
+            peripheral.maximumWriteValueLength(for: .withoutResponse)
         } chunkWriteHandler: { chunk in
             peripheral.writeValue(chunk, for: characteristic, type: .withResponse)
         }
@@ -182,10 +182,7 @@ extension BluetoothDiscoveryService: CBCentralManagerDelegate {
     ) {
         let peerID = peerID(for: peripheral)
         logger.info("Discovered peripheral \(peerID) with RSSI \(RSSI)")
-        discoveredPheripherals[peerID] = BluetoothPeer(
-            peripheral: peripheral,
-            advertisementData: advertisementData
-        )
+        discoveredPheripherals[peerID] = BluetoothPeer(peripheral: peripheral, advertisementData: advertisementData)
     }
 
     public func centralManager(_ centralManager: CBCentralManager, didConnect peripheral: CBPeripheral) {
